@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/30403114/README.md)
 # Letter to the Universe — daily Reel pipeline
 
 A fully automated system that renders a new Instagram Reel every day, showing
