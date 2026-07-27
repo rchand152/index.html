@@ -23,6 +23,7 @@ import os
 import random
 import subprocess
 import sys
+import urllib.request
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
@@ -31,6 +32,35 @@ W, H = 1080, 1920
 HERE = Path(__file__).parent
 FONT_DIR = HERE / "fonts"
 OUT_DIR = HERE / "_render"
+
+# Known-good source for both fonts (same files used to build/test this
+# script). Used automatically if the local copies are missing or corrupted,
+# so this script no longer depends on a manual upload succeeding.
+FONT_SOURCES = {
+    "Fraunces-Italic.ttf": "https://raw.githubusercontent.com/google/fonts/main/ofl/fraunces/Fraunces-Italic%5BSOFT%2CWONK%2Copsz%2Cwght%5D.ttf",
+    "Inter-Regular.ttf": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf",
+}
+MIN_VALID_FONT_BYTES = 50_000  # real files are hundreds of KB; anything smaller is corrupt/truncated
+
+def ensure_fonts():
+    """Make sure both font files exist locally and look like real font data.
+    Re-downloads from Google Fonts' GitHub mirror if a file is missing,
+    truncated, or fails to actually load as a font."""
+    FONT_DIR.mkdir(exist_ok=True)
+    for filename, url in FONT_SOURCES.items():
+        path = FONT_DIR / filename
+        needs_download = True
+        if path.exists() and path.stat().st_size >= MIN_VALID_FONT_BYTES:
+            try:
+                ImageFont.truetype(str(path), 40)  # actually try loading it
+                needs_download = False
+            except Exception:
+                needs_download = True
+        if needs_download:
+            print(f"Fetching {filename} (missing or invalid locally)...")
+            urllib.request.urlretrieve(url, path)
+            ImageFont.truetype(str(path), 40)  # verify the fresh download works; raises if not
+            print(f"  OK — {path.stat().st_size:,} bytes")
 
 # ---------- palette (matches the web page) ----------
 BG_DEEP = (10, 14, 31)
@@ -268,6 +298,7 @@ def pick_quote(quotes, mode="auto", index=None):
 
 
 def main():
+    ensure_fonts()
     p = argparse.ArgumentParser()
     p.add_argument("--count", type=int, required=True, help="current total letters released")
     p.add_argument("--count-label", default="letters released to the universe")
