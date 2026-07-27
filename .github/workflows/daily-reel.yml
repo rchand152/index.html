@@ -2,8 +2,9 @@ name: Daily Letter-to-the-Universe Reel
 
 on:
   schedule:
+    # 14:00 UTC every day — adjust to whenever your audience is most active
     - cron: "0 14 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch: {}   # lets you also trigger it manually from the Actions tab
 
 permissions:
   contents: write
@@ -19,7 +20,11 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          pip install -r requirements.txt
+        # ffmpeg is already preinstalled on GitHub's ubuntu-latest runners
 
       - name: Fetch current letter count
         id: count
